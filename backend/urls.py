@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from usuarios.views import UsuarioViewSet, LoginView  # Asegúrate de que esto sea correcto
+from usuarios.views import UsuarioViewSet, LoginView, RolViewSet, PermisoViewSet
 
-# Swagger imports
+# Swagger
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -12,8 +12,23 @@ from drf_yasg import openapi
 # Configuración de rutas automáticas
 router = DefaultRouter()
 router.register(r'usuarios', UsuarioViewSet, basename='usuario')
+router.register(r'roles', RolViewSet, basename='rol')
+router.register(r'permisos', PermisoViewSet, basename='permiso')
 
-# Configuración de Swagger
+from productos.views import (
+    ProductoViewSet, CategoriaViewSet, SubcategoriaViewSet,
+    AutorViewSet, GeneroViewSet, EditorialViewSet
+)
+
+# Registro de rutas para la app productos
+router.register(r'productos', ProductoViewSet, basename='producto')
+router.register(r'categorias', CategoriaViewSet, basename='categoria')
+router.register(r'subcategorias', SubcategoriaViewSet, basename='subcategoria')
+router.register(r'autores', AutorViewSet, basename='autor')
+router.register(r'generos', GeneroViewSet, basename='genero')
+router.register(r'editoriales', EditorialViewSet, basename='editorial')
+
+
 schema_view = get_schema_view(
     openapi.Info(
         title="API Backend SI2",
@@ -25,14 +40,13 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    authentication_classes=[TokenAuthentication],  # 👈 esto es clave
+    authentication_classes=[TokenAuthentication],      ##clavee
 )
 
-# Rutas del proyecto
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
-    path('login/', LoginView.as_view(), name='login'),
+    path('Libreria/', include(router.urls)),
+    path('Libreria/login/', LoginView.as_view(), name='login'),
 
     # Swagger y ReDoc
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
