@@ -4,10 +4,10 @@ from django.db import models
 from django.db import models
 
 class Categoria(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
 
 class Subcategoria(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -15,26 +15,26 @@ class Subcategoria(models.Model):
 
 
 class Genero(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
 
     def __str__(self):
         return self.nombre
 
 
 class Editorial(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
 
     def __str__(self):
         return self.nombre
 
 class Autor(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
 
     def __str__(self):
         return self.nombre
 
 class Producto(models.Model):
-    nombre = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100,unique=True)
     descripcion = models.TextField()
     imagen = models.URLField(max_length=500)
     precio = models.DecimalField(max_digits=8, decimal_places=2)

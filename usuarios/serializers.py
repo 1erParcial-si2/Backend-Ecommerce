@@ -7,6 +7,11 @@ class PermisoSerializer(serializers.ModelSerializer):
         model = Permiso
         fields = ['id', 'nombre']
 
+    def validate_nombre(self, value):
+        permiso_id = self.instance.id if self.instance else None
+        if Permiso.objects.filter(nombre__iexact=value).exclude(id=permiso_id).exists():
+            raise serializers.ValidationError("Este permiso ya está registrado.")
+        return value
 
 
 class RolSerializer(serializers.ModelSerializer):
@@ -18,6 +23,12 @@ class RolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rol
         fields = ['id', 'nombre', 'permisos', 'permisos_ids']
+
+    def validate_nombre(self, value):
+        rol_id = self.instance.id if self.instance else None
+        if Rol.objects.filter(nombre__iexact=value).exclude(id=rol_id).exists():
+            raise serializers.ValidationError("Este rol ya existe.")
+        return value
 
 
 # Obtén el modelo de usuario (con tu configuración personalizada)
@@ -35,6 +46,18 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'nombre_completo', 'telefono', 'direccion',
                   'password','rol']  # Excluimos 'username' y mantenemos el 'email'
         extra_kwargs = {'password': {'write_only': True}}  # La contraseña solo se utilizará en la creación del usuario
+
+    def validate_email(self, value):
+        usuario_id = self.instance.id if self.instance else None
+        if Usuario.objects.filter(email__iexact=value).exclude(id=usuario_id).exists():
+            raise serializers.ValidationError("Este correo ya está registrado.")
+        return value
+
+    def validate_nombre_completo(self, value):
+        usuario_id = self.instance.id if self.instance else None
+        if Usuario.objects.filter(nombre_completo__iexact=value).exclude(id=usuario_id).exists():
+            raise serializers.ValidationError("Este nombre ya está registrado.")
+        return value
 
     def create(self, validated_data):
         """Crea un usuario con contraseña encriptada"""
