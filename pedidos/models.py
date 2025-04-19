@@ -9,28 +9,9 @@ import uuid
 from productos.models import Producto
 
 
-class Cupon(models.Model):
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='cupones'
-    )
-    codigo = models.CharField(max_length=20, unique=True)
-    descuento = models.DecimalField(max_digits=5, decimal_places=2,
-                                    help_text="Porcentaje de descuento, ej: 25.00 para 25%")
-    estado = models.BooleanField(default=True)
-    fecha_exp = models.DateField()
-
-    def __str__(self):
-        return f"{self.codigo} - {self.usuario.email}"
-
-    def es_valido(self):
-        return self.estado and self.fecha_exp >= date.today()
-
 
 class Pedido(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='pedidos')
-    cupon = models.ForeignKey('Cupon', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos')
 
     calificacion = models.IntegerField(
         null=True, blank=True,
@@ -56,30 +37,30 @@ class Pedido(models.Model):
     activo = models.BooleanField(default=True)
 
     def calcular_total(self):
-        total = sum([detalle.subtotal for detalle in self.detalles.all()])
-        if self.descuento:
-            total -= total * (self.descuento / Decimal(100))
-        self.total = total
-        self.save(update_fields=['total'])
+        detalles = self.detalles.all()   #nuevo
+        total_sin_descuento = sum([detalle.subtotal for detalle in self.detalles.all()])
+
+        # Aplicar descuento según monto total
+        if total_sin_descuento > 600:
+            self.descuento = Decimal(25.00)
+        elif total_sin_descuento > 400:
+            self.descuento = Decimal(15.00)
+        elif total_sin_descuento > 200:
+            self.descuento = Decimal(10.00)
+        else:
+            self.descuento = Decimal(0.00)
+
+        # Aplicar el descuento al total
+       # total -= total * (self.descuento / Decimal(100))
+        #self.total = total
+
+        total_con_descuento = total_sin_descuento - (total_sin_descuento * (self.descuento / Decimal(100)))
+        self.total = total_con_descuento
+
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)  # Guardar primero para que existan los detalles
         self.calcular_total()
-
-        # ✅ Si el pedido tiene un cupón, desactivarlo
-        if self.cupon and self.cupon.es_valido():
-            self.descuento = Decimal(25.00)  # puedes obtener del cupón si lo necesitas
-            self.cupon.estado = False
-            self.cupon.save()
-
-        # ✅ Si el pedido supera los 500bs, asignar un nuevo cupón
-        if self.total >= 500:
-            Cupon.objects.create(
-                usuario=self.usuario,
-                codigo=str(uuid.uuid4())[:8],  # puedes generar un código único
-                estado=True,
-                fecha_exp=date.today().replace(year=date.today().year + 1)
-            )
 
 
     def __str__(self):

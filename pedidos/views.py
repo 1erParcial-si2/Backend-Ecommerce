@@ -1,23 +1,25 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-from .models import Cupon, Pedido
-from .serializers import CuponSerializer, PedidoSerializer
+from .models import Pedido,DetallePedido
+from .serializers import  PedidoSerializer, DetallePedidoSerializer
 
+class DetallePedidoViewSet(viewsets.ModelViewSet):
+    queryset = DetallePedido.objects.all()
+    serializer_class = DetallePedidoSerializer
 
-# ViewSet para Cupones
-class CuponViewSet(viewsets.ModelViewSet):
-    queryset = Cupon.objects.all()
-    serializer_class = CuponSerializer
+    def perform_create(self, serializer):
+        detalle = serializer.save()  # Guardamos el detalle
+        # Obtenemos el pedido asociado al detalle
+        pedido = detalle.pedido
+        pedido.calcular_total()  # Recalcular el total después de agregar el detalle
+        pedido.save()  # Guardar el pedido con el nuevo total
 
-    # Acción para obtener los cupones del usuario logueado
-    @action(detail=False, methods=['get'], url_path='mis-cupones')
-    def mis_cupones(self, request):
-        cupones = Cupon.objects.filter(usuario=request.user, estado=True)
-        serializer = self.get_serializer(cupones, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 
 # ViewSet para Pedidos
@@ -26,30 +28,33 @@ class PedidoViewSet(viewsets.ModelViewSet):
     serializer_class = PedidoSerializer
 
     def perform_create(self, serializer):
-        cupon_codigo = self.request.data.get('cupon_codigo', None)
-        usuario = self.request.user
-        cupon = None
+        pedido = serializer.save(usuario=self.request.user)
+        pedido.calcular_total()
+        pedido.save()
 
-        with transaction.atomic():
-            # Crear el pedido asociado al usuario
-            pedido = serializer.save(usuario=usuario)
+    @action(detail=True, methods=['post'], url_path='calcular-total')
+    def calcular_total(self, request, pk=None):
+        pedido = self.get_object()
+        pedido.calcular_total()
+        pedido.save()
+        return Response({'total_actualizado': str(pedido.total)})
 
-            # Validar y aplicar el cupón si se envió
-            if cupon_codigo:
-                try:
-                    cupon = Cupon.objects.get(codigo=cupon_codigo, usuario=usuario, estado=True)
-                    if not cupon.es_valido():
-                        raise ValidationError("Cupón no válido o expirado.")
-                    pedido.cupon = cupon
-                    pedido.descuento = cupon.descuento
-                    pedido.save()
+    @action(detail=True, methods=['post'], url_path='calificar')
+    def calificar(self, request, pk=None):
+        pedido = self.get_object()
 
-                    # Desactivar el cupón después de usarlo
-                    cupon.estado = False
-                    cupon.save()
+        # Obtenemos la calificación del cuerpo de la solicitud
+        calificacion = request.data.get('calificacion')
 
-                except Cupon.DoesNotExist:
-                    raise ValidationError("Cupón inválido o ya usado")
+        if calificacion is None:
+            return Response({'detail': 'Debe proporcionar una calificación.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Calcular el total del pedido
-            pedido.calcular_total()
+        # Validamos que la calificación esté en el rango correcto (1-5)
+        if not (1 <= calificacion <= 5):
+            return Response({'detail': 'La calificación debe estar entre 1 y 5.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Actualizamos la calificación
+        pedido.calificacion = calificacion
+        pedido.save()
+
+        return Response({'detail': 'Calificación actualizada con éxito.'}, status=status.HTTP_200_OK)

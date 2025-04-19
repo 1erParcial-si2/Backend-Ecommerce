@@ -28,10 +28,11 @@ router.register(r'autores', AutorViewSet, basename='autor')
 router.register(r'generos', GeneroViewSet, basename='genero')
 router.register(r'editoriales', EditorialViewSet, basename='editorial')
 
-from pedidos.views import (CuponViewSet, PedidoViewSet)
+from pedidos.views import ( PedidoViewSet,DetallePedidoViewSet)
 
-router.register(r'cupones', CuponViewSet, basename='cupon')
+
 router.register(r'pedidos', PedidoViewSet, basename='pedido')
+router.register(r'detalles', DetallePedidoViewSet, basename='detallepedido')
 
 
 schema_view = get_schema_view(
