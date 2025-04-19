@@ -18,14 +18,6 @@ class ProductoSerializer(serializers.ModelSerializer):
 
         nombre_categoria = categoria_obj.nombre.lower()
 
-        # Si es "libros", se requieren los campos
-        if nombre_categoria == "Libros":
-            if not data.get('genero'):
-                raise serializers.ValidationError({"genero": "Este campo es obligatorio para libros."})
-            if not data.get('autor'):
-                raise serializers.ValidationError({"autor": "Este campo es obligatorio para libros."})
-            if not data.get('editorial'):
-                raise serializers.ValidationError({"editorial": "Este campo es obligatorio para libros."})
 
         # Si es "accesorios", no deben enviarse esos campos
         if nombre_categoria == "Accesorios":

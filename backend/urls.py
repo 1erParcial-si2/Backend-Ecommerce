@@ -28,12 +28,17 @@ router.register(r'autores', AutorViewSet, basename='autor')
 router.register(r'generos', GeneroViewSet, basename='genero')
 router.register(r'editoriales', EditorialViewSet, basename='editorial')
 
-from pedidos.views import ( PedidoViewSet,DetallePedidoViewSet)
+from pedidos.views import ( PedidoViewSet,DetallePedidoViewSet,CarritoViewSet, DetalleCarritoViewSet)
 
 
 router.register(r'pedidos', PedidoViewSet, basename='pedido')
 router.register(r'detalles', DetallePedidoViewSet, basename='detallepedido')
+router.register(r'carrito', CarritoViewSet, basename='carrito')
+router.register(r'detalle-carrito', DetalleCarritoViewSet, basename='detalle-carrito')
 
+
+
+router = DefaultRouter()
 
 schema_view = get_schema_view(
     openapi.Info(

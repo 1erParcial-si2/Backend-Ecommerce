@@ -82,3 +82,52 @@ class DetallePedido(models.Model):
         def __str__(self):
             return f"{self.cantidad} x {self.producto.nombre}"
 
+
+# models.py
+class Carrito(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='carritos')
+    activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Carrito de {self.usuario}"
+
+    def calcular_total(self):
+        return sum([detalle.subtotal for detalle in self.detalles.all()])
+
+    def convertir_a_pedido(self):
+        pedido = Pedido.objects.create(
+            usuario=self.usuario,
+            total=self.calcular_total(),
+            descuento=0.00,  # Si quieres aplicar algún tipo de descuento en el pedido
+            activo=True
+        )
+
+        for detalle in self.detalles.all():
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=detalle.producto,
+                cantidad=detalle.cantidad,
+                precio_unitario=detalle.precio_unitario,
+                subtotal=detalle.subtotal
+            )
+
+        self.activo = False  # Desactivar el carrito
+        self.save()
+
+        return pedido
+
+
+class DetalleCarrito(models.Model):
+    carrito = models.ForeignKey(Carrito, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
+
+    def save(self, *args, **kwargs):
+        self.precio_unitario = self.producto.precio
+        self.subtotal = self.precio_unitario * self.cantidad
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.cantidad} x {self.producto.nombre}"
