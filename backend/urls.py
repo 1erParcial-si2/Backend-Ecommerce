@@ -38,7 +38,7 @@ router.register(r'detalle-carrito', DetalleCarritoViewSet, basename='detalle-car
 
 
 
-router = DefaultRouter()
+
 
 schema_view = get_schema_view(
     openapi.Info(
