@@ -55,6 +55,16 @@ La documentación interactiva de la API está disponible en:
   ```
 
 ---
+MODELO (models.py)
+   ↓
+SERIALIZER (serializers.py)
+   ↓
+VIEWSET (views.py)
+   ↓
+RUTAS (urls.py) → No lo vimos, pero es donde se conectan estas vistas
+   ↓
+CLIENTE (Angular u otro)
+
 
 📅 **Fecha de última actualización**: [5/4/2025]
 

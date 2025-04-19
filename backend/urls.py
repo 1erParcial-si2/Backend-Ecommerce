@@ -16,17 +16,23 @@ router.register(r'roles', RolViewSet, basename='rol')
 router.register(r'permisos', PermisoViewSet, basename='permiso')
 
 from productos.views import (
-    ProductoViewSet, CategoriaViewSet, SubcategoriaViewSet,
+    ProductoViewSet, CategoriaViewSet,
     AutorViewSet, GeneroViewSet, EditorialViewSet
 )
+
 
 # Registro de rutas para la app productos
 router.register(r'productos', ProductoViewSet, basename='producto')
 router.register(r'categorias', CategoriaViewSet, basename='categoria')
-router.register(r'subcategorias', SubcategoriaViewSet, basename='subcategoria')
 router.register(r'autores', AutorViewSet, basename='autor')
 router.register(r'generos', GeneroViewSet, basename='genero')
 router.register(r'editoriales', EditorialViewSet, basename='editorial')
+
+from pedidos.views import ( PedidoViewSet,DetallePedidoViewSet)
+
+
+router.register(r'pedidos', PedidoViewSet, basename='pedido')
+router.register(r'detalles', DetallePedidoViewSet, basename='detallepedido')
 
 
 schema_view = get_schema_view(

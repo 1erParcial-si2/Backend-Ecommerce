@@ -1,15 +1,19 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 
+#aca se crean las tablas
 class Rol(models.Model):
     nombre = models.CharField(max_length=100,unique=True)
     permisos = models.ManyToManyField("Permiso", related_name='roles')
+    is_active = models.BooleanField(default=True)
+
 
     def __str__(self):
         return self.nombre
 
 class Permiso(models.Model):
     nombre = models.CharField(max_length=100,unique=True)
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre
