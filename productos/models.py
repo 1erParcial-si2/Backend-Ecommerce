@@ -2,6 +2,7 @@ from django.db import models
 
 # Create your models here.
 from django.db import models
+from django.core.validators import MinValueValidator
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100,unique=True)
@@ -32,6 +33,7 @@ class Autor(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=100,unique=True)
     descripcion = models.TextField()
+    stock = models.IntegerField(validators=[MinValueValidator(0)])
     imagen = models.URLField(max_length=500)
     precio = models.DecimalField(max_digits=8, decimal_places=2)
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
@@ -43,4 +45,5 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+
 
