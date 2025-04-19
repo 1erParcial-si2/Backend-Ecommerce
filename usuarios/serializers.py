@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Rol, Permiso
 
+#maneja el json
 class PermisoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permiso

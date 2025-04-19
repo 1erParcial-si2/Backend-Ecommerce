@@ -1,11 +1,40 @@
 from rest_framework import serializers
-from .models import Producto, Categoria, Subcategoria, Autor, Genero, Editorial
+from .models import Producto, Categoria, Autor, Genero, Editorial
 from rest_framework.validators import UniqueTogetherValidator
+
+
 
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Producto
         fields = '__all__'
+
+    def validate(self, data):
+        instance = self.instance
+        # Validamos en base al nombre de la categoría
+        categoria_obj = data.get('categoria')
+        if not categoria_obj:
+            raise serializers.ValidationError({"categoria": "La categoría es requerida."})
+
+        nombre_categoria = categoria_obj.nombre.lower()
+
+        # Si es "libros", se requieren los campos
+        if nombre_categoria == "Libros":
+            if not data.get('genero'):
+                raise serializers.ValidationError({"genero": "Este campo es obligatorio para libros."})
+            if not data.get('autor'):
+                raise serializers.ValidationError({"autor": "Este campo es obligatorio para libros."})
+            if not data.get('editorial'):
+                raise serializers.ValidationError({"editorial": "Este campo es obligatorio para libros."})
+
+        # Si es "accesorios", no deben enviarse esos campos
+        if nombre_categoria == "Accesorios":
+            if data.get('genero') or data.get('autor') or data.get('editorial'):
+                raise serializers.ValidationError(
+                    "Los campos 'genero', 'autor' y 'editorial' no deben enviarse para accesorios.")
+
+        return data
+
 
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,24 +45,6 @@ class CategoriaSerializer(serializers.ModelSerializer):
         categoria_id = self.instance.id if self.instance else None
         if Categoria.objects.filter(nombre__iexact=value).exclude(id=categoria_id).exists():
             raise serializers.ValidationError("Ya existe una categoría con ese nombre.")
-        return value
-
-class SubcategoriaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subcategoria
-        fields = '__all__'
-        validators = [
-            UniqueTogetherValidator(
-                queryset=Subcategoria.objects.all(),
-                fields=['nombre', 'categoria'],  # Evitar duplicados por nombre y categoría
-                message="Ya existe una subcategoría con ese nombre en esta categoría."
-            )
-        ]
-
-    def validate_nombre(self, value):
-        subcat_id = self.instance.id if self.instance else None
-        if Subcategoria.objects.filter(nombre__iexact=value).exclude(id=subcat_id).exists():
-            raise serializers.ValidationError("Ya existe una subcategoría con ese nombre.")
         return value
 
 
