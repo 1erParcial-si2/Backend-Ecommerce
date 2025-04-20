@@ -37,7 +37,6 @@ router.register(r'carrito', CarritoViewSet, basename='carrito')
 router.register(r'detalle-carrito', DetalleCarritoViewSet, basename='detalle-carrito')
 
 
-
 schema_view = get_schema_view(
     openapi.Info(
         title="API Backend SI2",
@@ -49,13 +48,14 @@ schema_view = get_schema_view(
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    authentication_classes=[TokenAuthentication],      ##clavee
+    authentication_classes=[TokenAuthentication],
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('Libreria/', include(router.urls)),
     path('Libreria/login/', LoginView.as_view(), name='login'),
+    path('Libreria/ml-csv/', PedidoViewSet.as_view({'get': 'descargar_ml_csv'}), name='ml-csv-download'),
 
     # Swagger y ReDoc
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
