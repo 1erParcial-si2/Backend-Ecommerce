@@ -139,4 +139,13 @@ class LoginView(ObtainAuthToken):
         Token.objects.filter(user=user).delete()
         token = Token.objects.create(user=user)
 
-        return Response({'token': token.key, 'user_id': user.id})
+        # Usar el serializer para obtener datos completos del usuario
+        from .serializers import UsuarioSerializer
+        user_serializer = UsuarioSerializer(user)
+
+        # Devolver token, user_id y datos completos del usuario
+        return Response({
+            'token': token.key, 
+            'user_id': user.id,
+            'usuario': user_serializer.data
+        })

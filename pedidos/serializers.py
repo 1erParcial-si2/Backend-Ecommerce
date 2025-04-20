@@ -10,10 +10,17 @@ from django.db import transaction
 
 
 class DetallePedidoSerializer(serializers.ModelSerializer):
+    # Incluir el objeto completo del producto
+    producto = ProductoSerializer(read_only=True)
+    
+    # Campo para escritura (solo ID)
+    producto_id = serializers.PrimaryKeyRelatedField(
+        queryset=Producto.objects.all(), source='producto', write_only=True
+    )
 
     class Meta:
         model = DetallePedido
-        fields = ['id','pedido',  'producto', 'cantidad', 'precio_unitario', 'subtotal']
+        fields = ['id', 'pedido', 'producto', 'producto_id', 'cantidad', 'precio_unitario', 'subtotal']
 
 
     def create(self, validated_data):
@@ -39,11 +46,12 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
 
 class PedidoSerializer(serializers.ModelSerializer):
-    detalles = DetallePedidoSerializer(many=True, write_only=True, required=False)
+    # Incluir detalles en la respuesta (tanto para lectura como escritura)
+    detalles = DetallePedidoSerializer(many=True, required=False)
 
     class Meta:
         model = Pedido
-        fields = ['id', 'usuario', 'detalles', 'descuento', 'total', 'fecha_pedido']
+        fields = ['id', 'usuario', 'detalles', 'descuento', 'total', 'fecha_pedido', 'calificacion', 'activo']
         read_only_fields = ['id', 'fecha_pedido']
 
     def create(self, validated_data):
