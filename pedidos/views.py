@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .serializers import CarritoSerializer
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from itertools import combinations
 
 from .models import Carrito, DetalleCarrito
 from rest_framework.exceptions import ValidationError
@@ -21,7 +22,6 @@ class DetallePedidoViewSet(viewsets.ModelViewSet):
         pedido.calcular_total()  # Recalcular el total después de agregar el detalle
         pedido.save()  # Guardar el pedido con el nuevo total
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 
@@ -31,7 +31,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
     serializer_class = PedidoSerializer
 
     def perform_create(self, serializer):
-        pedido = serializer.save(usuario=self.request.user)
+        pedido = serializer.save()
         pedido.calcular_total()
         pedido.save()
 
@@ -61,6 +61,29 @@ class PedidoViewSet(viewsets.ModelViewSet):
         pedido.save()
 
         return Response({'detail': 'Calificación actualizada con éxito.'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='combinaciones-ml')
+    def combinaciones_ml(self, request):
+        m = 2  # tamaño del input
+        resultado = []
+
+        pedidos = Pedido.objects.prefetch_related('detallespedido__producto').all()
+
+        for pedido in pedidos:
+            productos = list(pedido.detallespedido.values_list('producto_id', flat=True))
+
+            if len(productos) <= m:
+                continue  # no hay suficientes productos para generar ejemplos
+
+            for input_combo in combinations(productos, m):
+                target = [p for p in productos if p not in input_combo]
+                if target:  # aseguramos que haya algo como target
+                    resultado.append({
+                        "input": list(input_combo),
+                        "target": target
+                    })
+
+        return Response(resultado)
 
 class CarritoViewSet(viewsets.ModelViewSet):
     queryset = Carrito.objects.all()

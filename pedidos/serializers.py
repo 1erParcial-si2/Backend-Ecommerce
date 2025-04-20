@@ -14,7 +14,8 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         model = DetallePedido
         fields = ['id','pedido',  'producto', 'cantidad', 'precio_unitario', 'subtotal']
 
-        def create(self, validated_data):
+
+    def create(self, validated_data):
             producto = validated_data['producto']
             cantidad = validated_data['cantidad']
 
@@ -37,7 +38,7 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
 
 class PedidoSerializer(serializers.ModelSerializer):
-
+    detalles = DetallePedidoSerializer(many=True, write_only=True, required=False)
 
     class Meta:
         model = Pedido
