@@ -20,7 +20,7 @@ class ProductoSerializer(serializers.ModelSerializer):
 
 
         # Si es "accesorios", no deben enviarse esos campos
-        if nombre_categoria == "Accesorios":
+        if nombre_categoria.lower() == "Accesorios":
             if data.get('genero') or data.get('autor') or data.get('editorial'):
                 raise serializers.ValidationError(
                     "Los campos 'genero', 'autor' y 'editorial' no deben enviarse para accesorios.")

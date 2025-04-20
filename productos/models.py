@@ -36,7 +36,7 @@ class Producto(models.Model):
     stock = models.IntegerField(validators=[MinValueValidator(0)])
     imagen = models.URLField(max_length=500)
     precio = models.DecimalField(max_digits=8, decimal_places=2)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
     genero = models.ForeignKey(Genero, on_delete=models.SET_NULL, null=True, blank=True)
     autor = models.ForeignKey(Autor, on_delete=models.SET_NULL, null=True, blank=True)
     editorial = models.ForeignKey(Editorial, on_delete=models.SET_NULL, null=True, blank=True)
