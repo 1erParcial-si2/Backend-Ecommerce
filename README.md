@@ -461,5 +461,8 @@ Para más información sobre la implementación técnica, consulte los archivos 
 - `pedidos/serializers.py`: Serialización y validación
 - `pedidos/views.py`: Endpoints y lógica de negocio
 
+
+
+pruebaaa commit
 📅 **Fecha de última actualización**: [20/4/2025]
 
