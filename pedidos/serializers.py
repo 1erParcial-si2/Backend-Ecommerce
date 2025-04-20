@@ -109,7 +109,8 @@ class DetalleCarritoSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             detalle_existente = DetalleCarrito.objects.filter(
                 carrito=carrito,
-                producto=producto
+                producto=producto,
+                is_active=True
             ).first()
             
             if detalle_existente:
@@ -128,6 +129,31 @@ class DetalleCarritoSerializer(serializers.ModelSerializer):
             else:
                 # Crear nuevo detalle de carrito
                 return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """
+        Actualiza la cantidad de un producto en el carrito.
+        Si la cantidad nueva es 0, desactiva el producto en lugar de eliminarlo.
+        """
+        nueva_cantidad = validated_data.get('cantidad', instance.cantidad)
+        
+        # Si la cantidad es 0, desactivar el producto
+        if nueva_cantidad == 0:
+            instance.is_active = False
+            instance.save()
+            return instance
+            
+        # Verificar stock disponible (ya se validó en validate, pero lo reforzamos)
+        if instance.producto.stock < nueva_cantidad:
+            raise serializers.ValidationError(
+                f"No hay suficiente stock para el producto '{instance.producto.nombre}'. Stock actual: {instance.producto.stock}"
+            )
+        
+        # Actualizar cantidad y recalcular subtotal
+        instance.cantidad = nueva_cantidad
+        instance.save()  # Esto recalculará el subtotal automáticamente
+        
+        return instance
 
 
 class CarritoSerializer(serializers.ModelSerializer):
