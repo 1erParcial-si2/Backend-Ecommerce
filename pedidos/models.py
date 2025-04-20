@@ -1,4 +1,6 @@
 from django.db import models
+from django.db import transaction
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 from django.db import models
@@ -95,24 +97,47 @@ class Carrito(models.Model):
         return sum([detalle.subtotal for detalle in self.detalles.all()])
 
     def convertir_a_pedido(self):
-        pedido = Pedido.objects.create(
-            usuario=self.usuario,
-            total=self.calcular_total(),
-            descuento=0.00,  # Si quieres aplicar algún tipo de descuento en el pedido
-            activo=True
-        )
-
-        for detalle in self.detalles.all():
-            DetallePedido.objects.create(
-                pedido=pedido,
-                producto=detalle.producto,
-                cantidad=detalle.cantidad,
-                precio_unitario=detalle.precio_unitario,
-                subtotal=detalle.subtotal
+        # Verificar que haya productos en el carrito
+        if not self.detalles.exists():
+            raise ValidationError("No se puede crear un pedido sin productos")
+            
+        # Usar transacción para garantizar la integridad
+        with transaction.atomic():
+            # Verificar stock de todos los productos
+            for detalle in self.detalles.all():
+                if detalle.producto.stock < detalle.cantidad:
+                    raise ValidationError(
+                        f"No hay suficiente stock para '{detalle.producto.nombre}'. Stock actual: {detalle.producto.stock}"
+                    )
+            
+            pedido = Pedido.objects.create(
+                usuario=self.usuario,
+                total=self.calcular_total(),
+                descuento=0.00,  # Se calculará después
+                activo=True
             )
 
-        self.activo = False  # Desactivar el carrito
-        self.save()
+            # Transferir productos y actualizar stock
+            for detalle in self.detalles.all():
+                # Disminuir stock
+                producto = detalle.producto
+                producto.stock -= detalle.cantidad
+                producto.save()
+                
+                # Crear detalle de pedido
+                DetallePedido.objects.create(
+                    pedido=pedido,
+                    producto=producto,
+                    cantidad=detalle.cantidad,
+                    precio_unitario=detalle.precio_unitario,
+                    subtotal=detalle.subtotal
+                )
+
+            pedido.calcular_total()  # Calcular el descuento correcto
+            pedido.save()
+            
+            self.activo = False  # Desactivar el carrito
+            self.save()
 
         return pedido
 
