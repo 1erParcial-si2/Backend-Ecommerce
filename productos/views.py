@@ -30,7 +30,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
     }
 
     def get_queryset(self):
-        return Producto.objects.filter(activo=True)
+        return Producto.objects.filter(is_active=True)
 
 class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all()
