@@ -101,6 +101,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
         # Generación de CSV si se solicita
         if format_type.lower() == 'csv':
             import csv
+            import json
             from django.http import HttpResponse
             
             # Configurar la respuesta HTTP para forzar la descarga
@@ -108,16 +109,18 @@ class PedidoViewSet(viewsets.ModelViewSet):
             response['Content-Disposition'] = 'attachment; filename="recomendaciones_ml.csv"'
             response['Access-Control-Expose-Headers'] = 'Content-Disposition'
             
-            writer = csv.writer(response)
-            writer.writerow(['input_productos', 'target_producto'])
+            # Configurar el writer para que use comillas dobles
+            writer = csv.writer(response, quoting=csv.QUOTE_ALL)
+            writer.writerow(['input', 'target'])
             
             for item in resultado:
-                # Convertir lista de IDs de productos a string
-                input_str = ','.join(map(str, item['input']))
+                # Convertir input y target a formato JSON como strings
+                input_json = json.dumps(item['input'])
+                target_json = json.dumps([item['target']])  # Convertir a lista para mantener formato consistente
                 
                 writer.writerow([
-                    input_str,
-                    item['target']
+                    input_json,
+                    target_json
                 ])
             
             return response
@@ -156,6 +159,7 @@ class PedidoViewSet(viewsets.ModelViewSet):
         
         # Generar CSV
         import csv
+        import json
         from django.http import HttpResponse
         
         # Configurar la respuesta HTTP para forzar la descarga
@@ -163,16 +167,18 @@ class PedidoViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = 'attachment; filename="recomendaciones_ml.csv"'
         response['Access-Control-Expose-Headers'] = 'Content-Disposition'
         
-        writer = csv.writer(response)
-        writer.writerow(['input_productos', 'target_producto'])
+        # Configurar el writer para que use comillas dobles
+        writer = csv.writer(response, quoting=csv.QUOTE_ALL)
+        writer.writerow(['input', 'target'])
         
         for item in resultado:
-            # Convertir lista de IDs de productos a string
-            input_str = ','.join(map(str, item['input']))
+            # Convertir input y target a formato JSON como strings
+            input_json = json.dumps(item['input'])
+            target_json = json.dumps([item['target']])  # Convertir a lista para mantener formato consistente
             
             writer.writerow([
-                input_str,
-                item['target']
+                input_json,
+                target_json
             ])
         
         return response
