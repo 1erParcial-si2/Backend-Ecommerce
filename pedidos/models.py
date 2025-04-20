@@ -94,17 +94,20 @@ class Carrito(models.Model):
         return f"Carrito de {self.usuario}"
 
     def calcular_total(self):
-        return sum([detalle.subtotal for detalle in self.detalles.all()])
+        return sum([detalle.subtotal for detalle in self.detalles.filter(is_active=True)])
 
     def convertir_a_pedido(self):
+        # Obtener solo detalles activos
+        detalles_activos = self.detalles.filter(is_active=True)
+        
         # Verificar que haya productos en el carrito
-        if not self.detalles.exists():
+        if not detalles_activos.exists():
             raise ValidationError("No se puede crear un pedido sin productos")
             
         # Usar transacción para garantizar la integridad
         with transaction.atomic():
             # Verificar stock de todos los productos
-            for detalle in self.detalles.all():
+            for detalle in detalles_activos:
                 if detalle.producto.stock < detalle.cantidad:
                     raise ValidationError(
                         f"No hay suficiente stock para '{detalle.producto.nombre}'. Stock actual: {detalle.producto.stock}"
@@ -118,7 +121,7 @@ class Carrito(models.Model):
             )
 
             # Transferir productos y actualizar stock
-            for detalle in self.detalles.all():
+            for detalle in detalles_activos:
                 # Disminuir stock
                 producto = detalle.producto
                 producto.stock -= detalle.cantidad
@@ -148,6 +151,7 @@ class DetalleCarrito(models.Model):
     cantidad = models.PositiveIntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
+    is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
         self.precio_unitario = self.producto.precio

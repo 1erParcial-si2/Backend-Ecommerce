@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .serializers import CarritoSerializer
@@ -234,6 +234,39 @@ class CarritoViewSet(viewsets.ModelViewSet):
             'pedido_id': pedido.id
         })
 
+    @swagger_auto_schema(responses={200: '{"mensaje": "Carrito vaciado exitosamente."}'})
+    @action(detail=True, methods=['delete'], url_path='vaciar')
+    def vaciar_carrito(self, request, pk=None):
+        """
+        Desactiva lógicamente todos los productos del carrito.
+        """
+        try:
+            carrito = self.get_object()
+            
+            # Verificar que el carrito pertenece al usuario actual
+            if carrito.usuario != request.user:
+                return Response(
+                    {"error": "No tiene permiso para modificar este carrito"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Obtener la cantidad de productos a desactivar
+            detalles_activos = carrito.detalles.filter(is_active=True)
+            cantidad_productos = detalles_activos.count()
+            
+            # Desactivar lógicamente todos los detalles del carrito
+            detalles_activos.update(is_active=False)
+            
+            return Response({
+                "mensaje": f"Carrito vaciado exitosamente. Se desactivaron {cantidad_productos} productos."
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": f"Error al vaciar el carrito: {str(e)}"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 class DetalleCarritoViewSet(viewsets.ModelViewSet):
     queryset = DetalleCarrito.objects.all()
     serializer_class = DetalleCarritoSerializer
@@ -255,8 +288,113 @@ class DetalleCarritoViewSet(viewsets.ModelViewSet):
         # Manejar el caso de Swagger cuando no hay usuario autenticado
         if not self.request.user.is_authenticated:
             return DetalleCarrito.objects.none()
-        return DetalleCarrito.objects.filter(carrito__usuario=self.request.user, carrito__activo=True)
+        return DetalleCarrito.objects.filter(
+            carrito__usuario=self.request.user, 
+            carrito__activo=True,
+            is_active=True
+        )
 
     def perform_create(self, serializer):
         carrito, _ = Carrito.objects.get_or_create(usuario=self.request.user, activo=True)
-        serializer.save(carrito=carrito) 
+        serializer.save(carrito=carrito)
+    
+    @swagger_auto_schema(responses={200: '{"mensaje": "Producto eliminado del carrito exitosamente."}'})
+    @action(detail=True, methods=['delete'], url_path='eliminar-producto')
+    def eliminar_producto(self, request, pk=None):
+        """
+        Elimina lógicamente un producto del carrito sin importar la cantidad.
+        """
+        try:
+            detalle = self.get_object()
+            
+            # Verificar que el detalle pertenece al usuario actual
+            if detalle.carrito.usuario != request.user:
+                return Response(
+                    {"error": "No tiene permiso para modificar este carrito"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Guardar datos para la respuesta
+            producto_nombre = detalle.producto.nombre
+            
+            # Eliminación lógica
+            detalle.is_active = False
+            detalle.save()
+            
+            return Response(
+                {"mensaje": f"Producto '{producto_nombre}' eliminado del carrito exitosamente."}, 
+                status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Error al eliminar el producto: {str(e)}"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @swagger_auto_schema(
+        request_body=serializers.Serializer({
+            'cantidad': serializers.IntegerField(help_text='Cantidad a reducir')
+        }),
+        responses={200: '{"mensaje": "Cantidad reducida exitosamente.", "cantidad_actual": 5}'}
+    )
+    @action(detail=True, methods=['patch'], url_path='reducir-cantidad')
+    def reducir_cantidad(self, request, pk=None):
+        """
+        Reduce la cantidad de un producto en el carrito por la cantidad especificada.
+        Si la cantidad resultante es 0 o menos, desactiva el producto del carrito.
+        """
+        try:
+            detalle = self.get_object()
+            
+            # Verificar que el detalle pertenece al usuario actual
+            if detalle.carrito.usuario != request.user:
+                return Response(
+                    {"error": "No tiene permiso para modificar este carrito"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Obtener la cantidad a reducir (por defecto 1)
+            cantidad_reducir = request.data.get('cantidad', 1)
+            
+            # Validar que la cantidad es un número positivo
+            try:
+                cantidad_reducir = int(cantidad_reducir)
+                if cantidad_reducir <= 0:
+                    return Response(
+                        {"error": "La cantidad a reducir debe ser mayor que cero."}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except (ValueError, TypeError):
+                return Response(
+                    {"error": "La cantidad debe ser un número entero positivo."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Calcular nueva cantidad
+            nueva_cantidad = detalle.cantidad - cantidad_reducir
+            
+            # Si la nueva cantidad es 0 o menos, desactivar el producto
+            if nueva_cantidad <= 0:
+                producto_nombre = detalle.producto.nombre
+                detalle.is_active = False
+                detalle.save()
+                return Response(
+                    {"mensaje": f"Producto '{producto_nombre}' eliminado del carrito por cantidad insuficiente."}, 
+                    status=status.HTTP_200_OK
+                )
+            
+            # Actualizar la cantidad
+            detalle.cantidad = nueva_cantidad
+            detalle.save()  # Esto recalculará el subtotal automáticamente
+            
+            return Response({
+                "mensaje": f"Cantidad reducida exitosamente.", 
+                "cantidad_actual": nueva_cantidad,
+                "subtotal": str(detalle.subtotal)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": f"Error al reducir la cantidad: {str(e)}"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            ) 
