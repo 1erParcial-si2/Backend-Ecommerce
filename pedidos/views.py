@@ -5,6 +5,7 @@ from .serializers import CarritoSerializer
 from rest_framework.permissions import IsAuthenticated
 from itertools import combinations
 import requests
+from django.conf import settings
 
 from .models import Carrito, DetalleCarrito
 from rest_framework.exceptions import ValidationError
@@ -327,7 +328,7 @@ class CarritoViewSet(viewsets.ModelViewSet):
             # Enviar los IDs de los productos al microservicio de recomendaciones
             try:
                 # URL del microservicio de recomendaciones
-                ml_service_url = "http://localhost:8001/api/recommendations/"
+                ml_service_url = settings.RECOMMENDATION_SERVICE_URL
                 
                 # Preparar los datos para enviar
                 data = {

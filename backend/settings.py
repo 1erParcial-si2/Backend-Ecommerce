@@ -28,7 +28,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.0.6', '4f2e-158-172-227-38.ngrok-free.app', '*']
+ALLOWED_HOSTS = ['*']  # Permitir cualquier host
+
+# URL del microservicio de recomendaciones
+RECOMMENDATION_SERVICE_URL = config('RECOMMENDATION_SERVICE_URL', default='http://localhost:8001/api/recommendations/')
 
 
 # Application definition
